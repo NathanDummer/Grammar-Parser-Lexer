@@ -1,4 +1,3 @@
-import math
 # Lexer
 class Lexer:
     def __init__(self, code):
@@ -7,6 +6,55 @@ class Lexer:
         self.lst = self.code.split()
         self.length = len(self.lst)
 
+
+    #goes through and puts multiplication and division statements in parenthesis
+    def precedence(self):
+        i = 0
+        
+        while i < self.length-1:
+
+            if self.lst[i] == "*" or self.lst[i] == "/":
+
+                #case there is a statement in parenthesis that is operated on in front
+                if self.lst[i-1] == ")":
+                    x = i-2
+                    count = 1
+                    while count != 0:
+                        
+                        if self.lst[x] == "(":
+                            count -= 1
+                        if self.lst[x] == ")":
+                            count += 1
+                            i+=1
+                        x -= 1
+                    x += 1
+                    
+                    self.lst = self.lst[:x] + ["("] + self.lst[x:]
+                else:
+        
+                    self.lst = self.lst[:i-1] + ["("] + self.lst[i-1:]    
+                i+=1
+            
+                #case there is statement in parenthesis that is operated on behind
+                if self.lst[i+1] == "(":
+                    x = i+2
+                    
+                    count = 1
+                    while count != 0:
+                        
+                        if self.lst[x] == "(":
+                            count += 1
+                        if self.lst[x] == ")":
+                            count -= 1
+                        x += 1
+
+                    self.lst = self.lst[:x] + [")"] + self.lst[x:] 
+                else:
+                    self.lst = self.lst[:i+2] + [")"] + self.lst[i+2:]
+                i+=1
+                self.length += 2   
+            i+=1
+
     #helper function that splits parenthesis from variable or values
     def splitLst(self):
         lst = self.lst
@@ -14,18 +62,21 @@ class Lexer:
         i = 0
         length = len(lst)
         while i < length:
+            
             last = len(lst[i]) - 1
-
+            
             if lst[i][0] == '(':
                 lst[i] = lst[i][1:]
                 lst = lst[:i] + ['('] + lst[i:]
                 length += 1
         
             elif lst[i][last] == ')' and len(lst[i]) > 1:
+                
                 lst[i] = lst[i][:last]
                 lst = lst[:i+1] + [')'] + lst[i+1:]
                 length += 1
-
+                i-=1
+            
             i += 1
         
         
@@ -75,7 +126,11 @@ class Parser:
 
     # function to parse the entire program
     def parse(self):
+        
         self.lexer.splitLst()
+        
+        self.lexer.precedence()
+        
         retStr = ""
         while self.lexer.position < self.lexer.length - 1:
             retStr = retStr + self.statement()
@@ -123,11 +178,9 @@ class Parser:
             iter += 2
         
         lst = self.lexer.lst[self.lexer.position + 2:iter]
-        #print("full: ", self.lexer.lst[self.lexer.position:iter])
-        #print("input: ", lst)
+        
 
         retStr = "('=', '" + self.lexer.lst[self.lexer.position] + "', " + self.arithmetic_expression(lst) + ')'
-        #print("return: ", retStr, "\n")
         self.lexer.position = iter
         return retStr
         
@@ -178,7 +231,7 @@ class Parser:
                     lst[0] = "'" + lst[1] + "', " + lst[0] + ", " + lst[2]
                 else:
                     lst[0] = "'" + lst[1] + "', '" + lst[0] + "', " + lst[2]
-
+                lst[0] = "(" + lst[0] + ")"
                 lst = lst[:1] + lst[count+3:]
 
             else:
@@ -199,7 +252,6 @@ class Parser:
                     else:
                         lst[0] = "'" + lst[1] + "', " + lst[0] + ", '" + lst[2] + "'"
                     lst[0] = "(" + lst[0] + ")"
-                    #lst[0] = "'" + lst[1] + "', " + lst[0] + ", " + lst[2]
                         
                 #this is the first statement if it is a variable and not a constant
                 else:
@@ -223,7 +275,28 @@ class Parser:
     # parse if statement, you can handle then and else part here.
     # you also have to check for condition.
     def if_statement(self):
-        return "w"
+        #find where if statement ends and if there is else statement
+        iter = self.lexer.position + 1
+        while iter < self.lexer.length:
+            curr = self.lexer.lst[iter]
+            if curr == "then":
+                break
+            iter += 1
+
+        #condition inside of if statement
+        cond = self.lexer.lst[self.lexer.position + 1:iter]
+        self.lexer.position = iter + 1
+        retStr = "('if', " + self.condition(cond) + ", " + self.statement()
+
+        #checks if theres an else statement and iterates if so
+        if self.lexer.length - 1 > self.lexer.position:
+            if self.lexer.lst[self.lexer.position] == "else":
+                self.lexer.position += 1
+                retStr += ", " + self.statement() + ")"
+        else:
+            retStr += ")"
+        return retStr
+        
     
     # implement while statment, check for condition
     # possibly make a call to statement?
