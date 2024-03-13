@@ -35,7 +35,7 @@ class Lexer:
 
     # move the lexer position and identify next possible tokens.
     def get_token(self):
-
+        #print("string: ", self.lst[self.position])
         if self.lst[self.position] == 'while':
             return "while"
         elif self.lst[self.position] == 'if':
@@ -78,13 +78,7 @@ class Parser:
         self.lexer.splitLst()
         retStr = ""
         while self.lexer.position < self.lexer.length - 1:
-            str = self.lexer.get_token()
-            if str == "expression":
-                retStr = retStr + self.assignment()
-            elif str == "if":
-                retStr = retStr + self.if_statement()
-            else:
-                retStr = retStr + self.while_loop()
+            retStr = retStr + self.statement()
         
         return retStr
 
@@ -97,8 +91,17 @@ class Parser:
         
     
     # parse if, while, assignment statement.
-   # def statement(self):
+    def statement(self):
+        str = self.lexer.get_token()
+            
+        if str == "expression":
+            retStr = self.assignment()
+        elif str == "if":
+            retStr = self.if_statement()
+        else:
+            retStr = self.while_loop()
 
+        return retStr
 
     # parse assignment statements
     def assignment(self):
@@ -225,7 +228,33 @@ class Parser:
     # implement while statment, check for condition
     # possibly make a call to statement?
     def while_loop(self):
-        return "w"
+        #find where while loop ends and if there is nested if or while statement
+        iter = self.lexer.position + 1
+        while iter < self.lexer.length:
+            curr = self.lexer.lst[iter]
+            if curr == "do":
+                break
+            iter += 1
 
-   # def condition(self):
-  
+        #condition inside of while loop
+        cond = self.lexer.lst[self.lexer.position + 1:iter]
+        self.lexer.position = iter + 1
+
+        retStr = "('while', " + self.condition(cond) + ", [" + self.statement() + "])"
+        return retStr
+
+    #used to format a conditional statement
+    def condition(self, lst):
+        retStr = ""
+        if len(lst) == 3:
+            if lst[0].isdigit():
+                retStr += "('" + lst[1] + "', " + lst[0] + ", " 
+            else:
+                retStr += "('" + lst[1] + "', '" + lst[0] + "', "
+            if lst[2].isdigit():
+                retStr += lst[2] + ")"
+            else:
+                retStr += "'" + lst[2] + "')"
+        else:
+            return "-1"
+        return retStr
