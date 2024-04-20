@@ -1,3 +1,4 @@
+import math
 # Lexer
 class Lexer:
     def __init__(self, code):
@@ -10,11 +11,8 @@ class Lexer:
     #goes through and puts multiplication and division statements in parenthesis
     def precedence(self):
         i = 0
-        
         while i < self.length-1:
-
             if self.lst[i] == "*" or self.lst[i] == "/":
-
                 #case there is a statement in parenthesis that is operated on in front
                 if self.lst[i-1] == ")":
                     x = i-2
@@ -331,3 +329,17 @@ class Parser:
         else:
             return "-1"
         return retStr
+  
+def selfTesting():
+    code = '''
+    x = (5 + 8 * 10)
+    '''
+
+    lex = Lexer(code)
+    pars = Parser(lex)
+    
+    ast = pars.parse()
+    ast_str = ''.join(map(str, ast))
+    print("output: ", ast_str)
+
+#selfTesting()
